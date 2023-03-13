@@ -1,17 +1,34 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react'
-import { StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { useState, useEffect } from 'react'
+import * as Battery from 'expo-battery'
+import { StyleSheet, Text, View, TouchableOpacity, AppState } from 'react-native';
 import {io} from 'socket.io-client'
-const SERVER_ADD = 'http://172.30.1.38:3000/hallcall'
+const SERVER_ADD = 'http://자신의 서버 ip:3000/hallcall'
 const socket = io(SERVER_ADD, {
   transports: ["websocket"],
 })
-// socket.on("connect", () => {
-//   console.log(socket.id)
-// })
+
 var btnOff = false
 export default function App() {
   const [LEDc, setLEDc] = useState('white')
+  useEffect(() => {
+    const appStateListener=AppState.addEventListener('change', nextAppState => {
+      if(nextAppState == 'background')
+        socket.emit('sendcall', '호출신호보냄')
+    })
+    return () => {
+      appStateListener.remove()
+    }
+  })
+  useEffect(() => {
+    const plugStateListener = Battery.addBatteryStateListener(({ batteryState }) => {
+      if(batteryState == 1)
+        socket.emit('sendcall', '호출신호보냄')
+    })
+    return () => {
+      plugStateListener.remove()
+    }
+  })
   return (
     <View style={styles.container}>
       <StatusBar hidden={true} />
